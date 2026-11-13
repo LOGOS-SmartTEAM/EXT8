@@ -1,0 +1,29 @@
+{
+    "name": "steambit-8",
+    "version": "4.0.0",
+    "description": "STEAMbit 8 — extensión MakeCode para micro:bit",
+    "license": "MIT",
+    "dependencies": {
+        "core": "*",
+        "microphone": "*",
+        "bluetooth": "*"
+    },
+    "files": [
+        "main.ts",
+        "bloques.ts",
+        "main.blocks",
+        "README.md",
+        "_locales/es/steambit-8-strings.json",
+        "_locales/es/steambit-8-jsdoc-strings.json",
+        "_locales/pt/steambit-8-strings.json",
+        "_locales/pt/steambit-8-jsdoc-strings.json"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "public": true,
+    "supportedTargets": [
+        "microbit"
+    ],
+    "preferredEditor": "blocksprj"
+}
