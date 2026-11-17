@@ -1,6 +1,6 @@
 # EXT8 — STEAMbit 8
 
-Extensión MakeCode para micro:bit, categoría **STEAMbit 8**. Versión **4.0.0**.
+Extensión MakeCode para micro:bit, categoría **STEAMbit 8**. Versión **4.1.0**.
 
 ## Cómo agregarla en MakeCode
 
@@ -9,7 +9,7 @@ Extensión MakeCode para micro:bit, categoría **STEAMbit 8**. Versión **4.0.0*
 
 ### Actualizar en un proyecto existente
 
-Los proyectos quedan fijados a la versión con la que se agregó la extensión. Para tener la 4.0.0:
+Los proyectos quedan fijados a la versión con la que se agregó la extensión. Para tener la 4.1.0:
 en el Explorador del proyecto (debajo del simulador), actualizar la extensión, o quitarla y volver a agregarla.
 
 ## Idiomas
@@ -32,7 +32,7 @@ Español, inglés y portugués: los bloques y sus ayudas se muestran en el idiom
 | … │ en pin I2C | Mide la temperatura (°C) o la humedad (%). |
 | Sensor de Color │ Detecta … en pin I2C | Detecta si el sensor ve el color elegido. |
 | Seguidor de líneas │ … en pin I2C | Detecta si ese lado del seguidor está sobre la línea negra. |
-| Joystick │ … en pin I2C | Lee la posición del joystick en el eje X o Y (−100 a 100) o su botón (1 = presionado, 0 = suelto). |
+| Joystick │ … en pin I2C | Lee la posición del joystick en el eje X o Y (−100 a 100). |
 
 ### SALIDAS
 
@@ -67,38 +67,36 @@ Español, inglés y portugués: los bloques y sus ayudas se muestran en el idiom
 | OLED │ Escribir … en fila … en columna … en pin I2C | Escribe un texto o un número en la pantalla OLED. |
 | OLED │ borrar textos en pin I2C | Borra todo lo escrito en la pantalla OLED. |
 
+### ESPECIAL
+
+| Bloque | Qué hace |
+|---|---|
+| Iniciar cronómetro | Pone el cronómetro en cero y lo inicia. |
+| Cronómetro | Tiempo transcurrido desde que se inició el cronómetro, en segundos. |
+
 ### Bluetooth
 
 | Bloque | Qué hace |
 |---|---|
-| al conectarse la app | Ejecuta el código cuando se conecta la app STEAMbit. |
-| al desconectarse la app | Ejecuta el código cuando se desconecta la app STEAMbit. |
-| app conectada | Verdadero mientras la app STEAMbit está conectada. |
 | mostrar nombre bluetooth de la placa | Hace desfilar en la pantalla el nombre Bluetooth de esta placa (por ejemplo ZAVIG para "BBC micro:bit [zavig]"), el mismo que muestra la app. |
 | al recibir etiqueta … con … | Ejecuta el código cada vez que la app manda un valor con esta etiqueta. |
 | número con etiqueta … | El último número que mandó la app con esta etiqueta (0 si todavía no llegó nada). |
 | texto con etiqueta … | El último texto que mandó la app con esta etiqueta ("" si todavía no llegó nada). |
-| … está activado | Verdadero si el último valor que mandó la app con esta etiqueta no es "0" ni vacío. Sirve para el interruptor de la app (valores 1/0). |
 | enviar a la app … con etiqueta … | Manda un número a la app. Aparece en los visores, dígitos y gráficas que usan esta etiqueta. |
-| cruceta en … | Verdadero si la cruceta de la app (tracción diferencial) apunta en esa dirección. La cruceta manda solo la dirección, sin velocidad. |
-| joystick … | Posición del joystick 360° de la app (tracción omnidireccional), de -100 a 100. y es adelante/atrás, x es izquierda/derecha y giro es el control de rotación. |
-| velocidad rueda … | Velocidad de una rueda de un robot de dos ruedas manejado con el joystick 360°, de -100 a 100. Encastrala en tu bloque de motor. |
-| botón … de la app presionado | Verdadero mientras el botón A o B de la pantalla de joystick de la app está presionado. |
 | enviar texto … a la app con etiqueta … | Manda un texto a la app (por ejemplo, a una terminal). |
-| enviar sí/no … a la app con etiqueta … | Manda verdadero/falso a la app (1/0, para un indicador de estado). |
-| enviar evento … a la app | Manda un evento a la app (aparece en el monitor de la app). Solo letras, números y _. |
-| fijar pausa entre envíos en … ms | Pausa mínima entre mensajes enviados a la app. Con 100 ms está probado que no se pierden bytes; valores menores mandan más rápido pero pueden perder datos. |
 
 ## Bluetooth (app STEAMbit)
 
-Los bloques de **Bluetooth** son los de la extensión
+Los bloques de **Bluetooth** son una selección de los bloques de la extensión
 [pxt-steambit-bluetooth](https://github.com/smartteamok/pxt-steambit-bluetooth), con la misma
 lógica y protocolo. Por eso esta extensión depende de **bluetooth**:
 
 - **bluetooth es incompatible con radio**: un proyecto con esta extensión no puede usar los bloques
   de radio (MakeCode ofrece quitar radio al agregarla).
-- En cada proyecto hay que activar **⚙ Configuración del proyecto → "No Pairing Required: Anyone can
-  connect via Bluetooth"**; la extensión no puede hacerlo sola y se pierde al crear un proyecto nuevo.
+- El proyecto ya viene en **"No se requiere vincular" (No Pairing Required)**: lo pone la extensión.
+  Si se elige otro modo en **⚙ Configuración del proyecto**, gana ese.
+- La categoría azul **Bluetooth** oficial de MakeCode queda oculta: sus bloques chocan con los de esta
+  extensión (por ejemplo, "al recibir datos" deja sin funcionar "al recibir etiqueta").
 - El servicio UART de Bluetooth arranca siempre al iniciar el programa, aunque no se use ningún bloque
   Bluetooth.
 - micro:bit V1: Bluetooth ocupa ~16 KB más de memoria de programa; los programas con OLED no entran en V1.

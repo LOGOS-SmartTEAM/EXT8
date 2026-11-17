@@ -1,6 +1,6 @@
 // STEAMbit 8 — extensión MakeCode para micro:bit.
 // Archivo único con todos los bloques de la extensión.
-// Código generado desde STV2-PADRE 4.1.0 (fuente de verdad): para cambiar un bloque,
+// Código generado desde STV2-PADRE 4.2.0 (fuente de verdad): para cambiar un bloque,
 // corregirlo en PADRE y regenerar. Textos en inglés en el código; español y portugués en _locales/.
 
 // Puertos GPIO STV2 — mapeo interno a pines de la micro:bit.
@@ -28,7 +28,7 @@ enum SabanaPuerto {
 /**
  * STEAMbit blocks: sensors, outputs, motors and screens.
  */
-//% color="#0288D1" icon="\uf1b3" block="STEAMbit 8" weight=200 groups=['SENSORS', 'OUTPUTS', 'MOVEMENT', 'MOTORS', 'SCREENS', 'Bluetooth']
+//% color="#0288D1" icon="\uf1b3" block="STEAMbit 8" weight=200 groups=['SENSORS', 'OUTPUTS', 'MOVEMENT', 'MOTORS', 'SCREENS', 'SPECIAL', 'Bluetooth']
 namespace bloques {
 
     // ===================== puertos =====================
@@ -371,34 +371,21 @@ namespace bloques {
         EjeX = 0,
         //% block="Y axis"
         EjeY = 1,
-        //% block="Button"
-        Boton = 2,
     }
 
     const JOYSTICK_I2C_ADDR = 0x61
-    // Byte del botón en la lectura de 4 bytes. ⚠️ SIN CONFIRMAR EN HARDWARE:
-    // Protocolo-I2C/joystick_en.md marca los bytes 0 y 3 como "Reserved" y
-    // ni logos-smart ni version-alex leen el botón. Se eligió el 3 (el que
-    // sigue a X e Y); si la prueba con el módulo real indica otro byte o
-    // polaridad invertida, cambiar solo esta constante / la comparación.
-    const JOYSTICK_BYTE_BOTON = 3
 
     // STV2-8 — Joystick conectado por I2C (dirección 0x61). Ejes: rango −100
-    // a 100 (Protocolo-I2C/joystick_en.md). Botón (2026-11-12): 1 si está
-    // presionado, 0 si no. Color celeste I2C (2026-10-25).
+    // a 100 (Protocolo-I2C/joystick_en.md). Color celeste I2C (2026-10-25).
+    // La opción "Botón" (2026-11-12, nunca confirmada en hardware) se quitó
+    // el 2026-11-17.
     /**
-     * Reads the joystick position on the X or Y axis (−100 to 100) or its button (1 = pressed, 0 = released).
+     * Reads the joystick position on the X or Y axis (−100 to 100).
      */
     //% blockId=joystick
     //% block="Joystick │ %eje on I2C pin"
     //% group="SENSORS" color="#35BFE9" weight=91 blockGap=8
     export function joystick(eje: SabanaEjeJoystick): number {
-        if (eje == SabanaEjeJoystick.Boton) {
-            // El protocolo define una lectura de 4 bytes; el botón está en
-            // uno de los "reservados" (ver JOYSTICK_BYTE_BOTON).
-            let paquete = pins.i2cReadBuffer(JOYSTICK_I2C_ADDR, 4)
-            return paquete[JOYSTICK_BYTE_BOTON] != 0 ? 1 : 0
-        }
         let buf = pins.i2cReadBuffer(JOYSTICK_I2C_ADDR, 3)
         if (eje == SabanaEjeJoystick.EjeY) {
             let value = buf.getNumber(NumberFormat.Int8BE, 2)
@@ -1205,6 +1192,40 @@ namespace bloques {
         return buf[lado] == 1
     }
 
+    // ===================== cronometro =====================
+    // Bloques CRONÓMETRO — grupo ESPECIAL (2026-11-17), después de Morse.
+    //
+    // "Iniciar cronómetro" guarda el momento actual (control.millis) y
+    // "Cronómetro" devuelve los segundos que pasaron desde entonces, con 1
+    // decimal. Las décimas se truncan, como un cronómetro de verdad: muestra 3,2
+    // hasta llegar a 3,3, nunca un tiempo que todavía no pasó. Antes del primer
+    // "Iniciar cronómetro" devuelve 0. Volver a iniciarlo lo pone en cero.
+    // No usa hilos en segundo plano: no consume nada mientras no se lee.
+    // Color violeta #9C27B0, igual que Morse.
+    // Momento (ms desde el encendido) en que se inició; -1 = nunca se inició.
+    let cronometroInicio = -1
+
+    /**
+     * Resets the stopwatch to zero and starts it.
+     */
+    //% blockId=cronometro_iniciar
+    //% block="Start stopwatch"
+    //% group="SPECIAL" color="#9C27B0" weight=95
+    export function iniciarCronometro(): void {
+        cronometroInicio = control.millis()
+    }
+
+    /**
+     * Time since the stopwatch was started, in seconds.
+     */
+    //% blockId=cronometro_valor
+    //% block="Stopwatch"
+    //% group="SPECIAL" color="#9C27B0" weight=94
+    export function cronometro(): number {
+        if (cronometroInicio < 0) return 0
+        return Math.idiv(control.millis() - cronometroInicio, 100) / 10
+    }
+
     // ===================== bluetooth =====================
     // Bloques BLUETOOTH — grupo "Bluetooth" (antes de ESPECIAL).
     //
@@ -1223,8 +1244,15 @@ namespace bloques {
     //   - Color #796EB0 (violeta STEAMbit, el de la extensión original) en cada
     //     bloque, porque la categoría PADRE es azul.
     //
-    // Requiere la dependencia "bluetooth" en pxt.json (incompatible con radio)
-    // y "No Pairing Required" en la configuración de cada proyecto de MakeCode.
+    // En uso (violeta, 2026-11-17): mostrar nombre, al recibir, número, texto,
+    // enviar número y enviar texto, en ese orden y pegados (blockGap=8). Los
+    // otros 11 quedan en gris #9E9E9E al final del grupo (weight 35 a 25):
+    // funcionan igual, pero no se usan en las EXT.
+    //
+    // Requiere la dependencia "bluetooth" en pxt.json (incompatible con radio).
+    // "No se requiere vincular" (No Pairing Required) ya viene activado por
+    // defecto: lo pone yotta.optionalConfig en pxt.json; si se elige otro modo en
+    // ⚙ Configuración del proyecto, gana ese.
     //
     // Protocolo de texto por el servicio UART de Bluetooth, una línea por
     // mensaje `TIPO|etiqueta|valor\n` (solo LF):
@@ -1410,13 +1438,6 @@ namespace bloques {
         btJoyButtonB = false
     }
 
-    // Velocidad de rueda para un robot de dos ruedas (−100..100):
-    // izquierda = y + x + giro, derecha = y − x − giro, acotadas.
-    function btWheelMix(left: boolean): number {
-        const turn = btJoyX + btJoyRotation
-        return btClampAxis(left ? btJoyY + turn : btJoyY - turn)
-    }
-
     // ----- Conexión -----
 
     // Actualiza el estado de conexión y despacha los handlers del alumno.
@@ -1521,12 +1542,6 @@ namespace bloques {
         btEnqueue("D|" + label, "D|" + label + "|" + btCleanValue(value) + "\n")
     }
 
-    // Envía `E|nombre`. Los eventos no se reemplazan en la cola.
-    function btSendEventLine(name: string): void {
-        if (!btIsValidLabel(name) || name.charAt(0) == "_") return
-        btEnqueue("", "E|" + name + "\n")
-    }
-
     // Encola una línea para enviar a la app. Si key no es vacía y ya hay una
     // línea pendiente con esa clave, la reemplaza. Sin conexión se descarta.
     function btEnqueue(key: string, line: string): void {
@@ -1561,46 +1576,6 @@ namespace bloques {
     // registrados antes que los del alumno.
     btInit()
 
-    // =====================================================================
-    // Bloques — blocks.ts de la extensión original
-    // =====================================================================
-
-    export enum SabanaBluetoothCruceta {
-        //% block="forward"
-        Adelante = 0,
-        //% block="backward"
-        Atras = 1,
-        //% block="left"
-        Izquierda = 2,
-        //% block="right"
-        Derecha = 3,
-        //% block="stopped"
-        Detenida = 4,
-    }
-
-    export enum SabanaBluetoothEje {
-        //% block="x"
-        X = 0,
-        //% block="y"
-        Y = 1,
-        //% block="rotation"
-        Giro = 2,
-    }
-
-    export enum SabanaBluetoothRueda {
-        //% block="left"
-        Izquierda = 0,
-        //% block="right"
-        Derecha = 1,
-    }
-
-    export enum SabanaBluetoothBoton {
-        //% block="A"
-        A = 0,
-        //% block="B"
-        B = 1,
-    }
-
     // Bloque sombra de la etiqueta (oculto): desplegable A–Z como la grilla
     // de la app, y también se puede escribir una etiqueta más larga ("temp").
     /**
@@ -1620,48 +1595,13 @@ namespace bloques {
         return etiqueta
     }
 
-    // ----- Conexión -----
-
-    /**
-     * Run code when the STEAMbit app connects.
-     */
-    //% blockId=bluetooth_al_conectarse
-    //% block="on app connected"
-    //% group="Bluetooth" color="#796EB0" weight=100 blockGap=8
-    export function bluetoothAlConectarse(handler: () => void): void {
-        btInit()
-        btConnectHandlers.push(handler)
-    }
-
-    /**
-     * Run code when the STEAMbit app disconnects.
-     */
-    //% blockId=bluetooth_al_desconectarse
-    //% block="on app disconnected"
-    //% group="Bluetooth" color="#796EB0" weight=99 blockGap=8
-    export function bluetoothAlDesconectarse(handler: () => void): void {
-        btInit()
-        btDisconnectHandlers.push(handler)
-    }
-
-    /**
-     * True while the STEAMbit app is connected.
-     */
-    //% blockId=bluetooth_app_conectada
-    //% block="app connected"
-    //% group="Bluetooth" color="#796EB0" weight=98
-    export function bluetoothAppConectada(): boolean {
-        btInit()
-        return btConnected
-    }
-
     /**
      * Scroll the Bluetooth name of this board on the screen (for example
      * ZAVIG for "BBC micro:bit [zavig]"), the same name the app shows.
      */
     //% blockId=bluetooth_mostrar_nombre
     //% block="show bluetooth name of the board"
-    //% group="Bluetooth" color="#796EB0" weight=97
+    //% group="Bluetooth" color="#796EB0" weight=97 blockGap=8
     export function bluetoothMostrarNombre(): void {
         btInit()
         basic.showString(control.deviceName().toUpperCase())
@@ -1677,7 +1617,7 @@ namespace bloques {
     //% etiqueta.shadow=bluetooth_etiqueta
     //% etiqueta.defl="A"
     //% draggableParameters="reporter"
-    //% group="Bluetooth" color="#796EB0" weight=95
+    //% group="Bluetooth" color="#796EB0" weight=95 blockGap=8
     export function bluetoothAlRecibir(etiqueta: string, handler: (value: number) => void): void {
         btInit()
         btDeclare(etiqueta, "num", "w")
@@ -1713,22 +1653,6 @@ namespace bloques {
     }
 
     /**
-     * True if the last value the app sent with this label is not "0" and not
-     * empty. Works with the app switch (values 1/0).
-     */
-    //% blockId=bluetooth_activado
-    //% block="$etiqueta is on"
-    //% etiqueta.shadow=bluetooth_etiqueta
-    //% etiqueta.defl="A"
-    //% group="Bluetooth" color="#796EB0" weight=88
-    export function bluetoothActivado(etiqueta: string): boolean {
-        btInit()
-        btDeclare(etiqueta, "bool", "w")
-        const value = btLastText(etiqueta)
-        return value != "0" && value != ""
-    }
-
-    /**
      * Send a number to the app. Shows up in gauges, digits and charts that
      * use this label.
      */
@@ -1736,69 +1660,10 @@ namespace bloques {
     //% block="send $valor to app with label $etiqueta"
     //% etiqueta.shadow=bluetooth_etiqueta
     //% etiqueta.defl="T"
-    //% group="Bluetooth" color="#796EB0" weight=80
+    //% group="Bluetooth" color="#796EB0" weight=80 blockGap=8
     export function bluetoothEnviarNumero(etiqueta: string, valor: number): void {
         btInit()
         btSendDataLine(etiqueta, "" + valor, "num")
-    }
-
-    // ----- Joystick -----
-
-    /**
-     * True if the d-pad of the app (differential drive screen) points this
-     * way. The d-pad sends only a direction, no speed.
-     */
-    //% blockId=bluetooth_cruceta
-    //% block="app d-pad $direccion"
-    //% group="Bluetooth" color="#796EB0" weight=50 blockGap=8
-    export function bluetoothCruceta(direccion: SabanaBluetoothCruceta): boolean {
-        btInit()
-        const code = btJoyDirection
-        switch (direccion) {
-            case SabanaBluetoothCruceta.Adelante: return code == "U"
-            case SabanaBluetoothCruceta.Atras: return code == "D"
-            case SabanaBluetoothCruceta.Izquierda: return code == "L"
-            case SabanaBluetoothCruceta.Derecha: return code == "R"
-            default: return code != "U" && code != "D" && code != "L" && code != "R"
-        }
-    }
-
-    /**
-     * Position of the 360° joystick of the app (omni drive screen), from
-     * -100 to 100. y is forward/backward, x is left/right, rotation is the
-     * spin control.
-     */
-    //% blockId=bluetooth_joystick
-    //% block="app joystick $eje"
-    //% group="Bluetooth" color="#796EB0" weight=49 blockGap=8
-    export function bluetoothJoystick(eje: SabanaBluetoothEje): number {
-        btInit()
-        if (eje == SabanaBluetoothEje.X) return btJoyX
-        if (eje == SabanaBluetoothEje.Y) return btJoyY
-        return btJoyRotation
-    }
-
-    /**
-     * Speed for one wheel of a two-wheel robot driven with the 360°
-     * joystick, from -100 to 100. Plug it into your motor block.
-     */
-    //% blockId=bluetooth_velocidad_rueda
-    //% block="wheel speed $rueda"
-    //% group="Bluetooth" color="#796EB0" weight=48 blockGap=8
-    export function bluetoothVelocidadRueda(rueda: SabanaBluetoothRueda): number {
-        btInit()
-        return btWheelMix(rueda == SabanaBluetoothRueda.Izquierda)
-    }
-
-    /**
-     * True while button A or B of the app joystick screen is pressed.
-     */
-    //% blockId=bluetooth_boton_presionado
-    //% block="app button $boton pressed"
-    //% group="Bluetooth" color="#796EB0" weight=47
-    export function bluetoothBotonPresionado(boton: SabanaBluetoothBoton): boolean {
-        btInit()
-        return boton == SabanaBluetoothBoton.A ? btJoyButtonA : btJoyButtonB
     }
 
     // ----- Los que en la extensión original estaban en "más" -----
@@ -1811,49 +1676,19 @@ namespace bloques {
     //% etiqueta.shadow=bluetooth_etiqueta
     //% etiqueta.defl="M"
     //% texto.defl="hello"
-    //% group="Bluetooth" color="#796EB0" weight=40 blockGap=8
+    //% group="Bluetooth" color="#796EB0" weight=40
     export function bluetoothEnviarTexto(etiqueta: string, texto: string): void {
         btInit()
         btSendDataLine(etiqueta, texto, "text")
     }
-
-    /**
-     * Send true/false to the app (1/0, for a status indicator).
-     */
-    //% blockId=bluetooth_enviar_si_no
-    //% block="send yes/no $valor to app with label $etiqueta"
-    //% etiqueta.shadow=bluetooth_etiqueta
-    //% etiqueta.defl="L"
-    //% valor.shadow=toggleYesNo
-    //% group="Bluetooth" color="#796EB0" weight=39 blockGap=8
-    export function bluetoothEnviarSiNo(etiqueta: string, valor: boolean): void {
-        btInit()
-        btSendDataLine(etiqueta, valor ? "1" : "0", "bool")
-    }
-
-    /**
-     * Send an event to the app (it shows up in the app monitor).
-     * Letters, numbers and _ only.
-     */
-    //% blockId=bluetooth_enviar_evento
-    //% block="send event $nombre to app"
-    //% nombre.defl="buttonA"
-    //% group="Bluetooth" color="#796EB0" weight=38
-    export function bluetoothEnviarEvento(nombre: string): void {
-        btInit()
-        btSendEventLine(nombre)
-    }
-
-    /**
-     * Minimum pause between messages sent to the app. 100 ms is tested to
-     * lose no bytes; lower values send faster but may lose data.
-     */
-    //% blockId=bluetooth_pausa_envios
-    //% block="set pause between sends to $ms ms"
-    //% ms.defl=100
-    //% group="Bluetooth" color="#796EB0" weight=30
-    export function bluetoothPausaEnvios(ms: number): void {
-        btInit()
-        btTxGapMs = Math.max(0, ms)
-    }
 }
+
+// Oculta la categoría azul "Bluetooth" oficial de MakeCode (2026-11-17). La
+// dependencia "bluetooth" sigue haciendo falta para los bloques de arriba,
+// pero sus bloques sueltos confunden y algunos rompen los nuestros (por
+// ejemplo "al recibir datos" reemplaza el evento UART que usa btInit). Los
+// atributos de un namespace se fusionan entre paquetes y el toolbox no
+// muestra los namespaces con deprecated. Los bloques oficiales siguen
+// existiendo: un proyecto viejo que los use se abre igual.
+//% deprecated=true
+namespace bluetooth { }

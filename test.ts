@@ -2,10 +2,12 @@
 bloques.boton(SabanaPuerto.P0)
 bloques.led(bloques.SabanaEstadoOnOff.ON, SabanaPuerto.P1)
 bloques.sensorColorDetecta(bloques.SabanaColorDetectado.Rojo)
-basic.showNumber(bloques.joystick(bloques.SabanaEjeJoystick.Boton))
+basic.showNumber(bloques.joystick(bloques.SabanaEjeJoystick.EjeY))
+bloques.iniciarCronometro()
+bloques.bluetoothMostrarNombre()
 bloques.bluetoothAlRecibir("A", function (value) {
-    if (bloques.bluetoothActivado("A")) {
-        bloques.motorMulticolor(bloques.SabanaColorMotor.Rojo, bloques.SabanaMovimientoMotorUnico.Derecha, bloques.bluetoothVelocidadRueda(bloques.SabanaBluetoothRueda.Izquierda))
-    }
+    bloques.motorMulticolor(bloques.SabanaColorMotor.Rojo, bloques.SabanaMovimientoMotorUnico.Derecha, value)
+    basic.showString(bloques.bluetoothTexto("M"))
 })
-bloques.bluetoothEnviarNumero("T", bloques.joystick(bloques.SabanaEjeJoystick.EjeX))
+bloques.bluetoothEnviarNumero("T", bloques.joystick(bloques.SabanaEjeJoystick.EjeX) + bloques.bluetoothNumero("A"))
+bloques.bluetoothEnviarTexto("M", "" + bloques.cronometro())

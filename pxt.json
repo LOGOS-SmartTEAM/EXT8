@@ -1,6 +1,6 @@
 {
     "name": "steambit-8",
-    "version": "4.0.0",
+    "version": "4.1.0",
     "description": "STEAMbit 8 — extensión MakeCode para micro:bit",
     "license": "MIT",
     "dependencies": {
@@ -25,5 +25,16 @@
     "supportedTargets": [
         "microbit"
     ],
-    "preferredEditor": "blocksprj"
+    "preferredEditor": "blocksprj",
+    "yotta": {
+        "optionalConfig": {
+            "microbit-dal": {
+                "bluetooth": {
+                    "open": 1,
+                    "whitelist": 0,
+                    "security_level": null
+                }
+            }
+        }
+    }
 }
